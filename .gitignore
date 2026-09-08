@@ -8,6 +8,10 @@ seed-data/output/
 # generated metadata dumps
 *.metadata.json
 
+# audit history database (Phase 6)
+auditor/audit_history.db
+*.db
+
 # python
 __pycache__/
 *.pyc

@@ -15,44 +15,20 @@ import argparse
 import json
 import sys
 
-from auditor.retention.checker import RetentionChecker
-from auditor.retention.policy import RetentionPolicy
-from auditor.scoring.engine import ScoringEngine
-from auditor.sensitivity.classifier import RegexSensitivityClassifier
-from auditor.usage.analyzer import UsageAnalyzer
-
-DEFAULT_LOG = "seed-data/output/query_log.jsonl"
-
-
-def _load_metadata(path: str | None):
-    if path:
-        from auditor.ingestion.metadata import DatabaseMetadata
-        return DatabaseMetadata.load(path)
-    from auditor.ingestion import extract_metadata
-    return extract_metadata()
+from auditor.scoring.pipeline import DEFAULT_LOG, AuditRunConfig, run_audit
 
 
 def run_pipeline(args):
-    meta = _load_metadata(args.metadata)
-
-    sens = RegexSensitivityClassifier().classify_all(meta.iter_columns())
-
-    connector = None
-    if args.live_retention:
-        from auditor.ingestion.connector import ReadOnlyConnector, ReadOnlyViolation
-        try:
-            connector = ReadOnlyConnector.from_env(strict=False)
-        except ReadOnlyViolation:
-            connector = None
-    usage = UsageAnalyzer(meta, window_days=args.window, mode=args.mode).analyze(args.log).columns
-
-    policy = RetentionPolicy.from_file(args.policy) if args.policy else RetentionPolicy()
-    if args.default_days:
-        policy.default_days = args.default_days
-    retention = RetentionChecker(policy, meta, connector=connector).check().columns
-
-    engine = ScoringEngine()
-    return engine.score_all(sens, usage, retention), policy
+    run = run_audit(AuditRunConfig(
+        metadata_path=args.metadata,
+        log_path=args.log,
+        policy_path=args.policy,
+        policy_days=args.default_days,
+        window_days=args.window,
+        mode=args.mode,
+        live_retention=args.live_retention,
+    ))
+    return run.result, run.policy
 
 
 def main(argv: list[str] | None = None) -> int:
