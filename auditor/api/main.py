@@ -15,9 +15,11 @@ Endpoints
 
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 
 from auditor.api.schemas import (
     AuditRequest,
@@ -42,6 +44,18 @@ app = FastAPI(
     version="0.1.0",
     summary="Trigger minimization audits and browse their history.",
     lifespan=lifespan,
+)
+
+# Single-operator demo tool: allow the local dashboard (Vite dev server /
+# preview build) to call the API directly when it isn't behind the dev proxy.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.environ.get(
+        "AUDIT_CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173",
+    ).split(","),
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
