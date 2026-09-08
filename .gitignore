@@ -1,8 +1,12 @@
 # secrets
 seed-data/.env
+auditor/.env
 
 # generated seed artifacts
 seed-data/output/
+
+# generated metadata dumps
+*.metadata.json
 
 # python
 __pycache__/
