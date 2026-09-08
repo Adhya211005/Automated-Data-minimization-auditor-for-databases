@@ -1,0 +1,11 @@
+# secrets
+seed-data/.env
+
+# generated seed artifacts
+seed-data/output/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
