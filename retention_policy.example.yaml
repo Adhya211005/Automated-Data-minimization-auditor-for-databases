@@ -1,0 +1,20 @@
+# Example retention policy for the seed database.
+# Resolution: column override > table override > default_days.
+
+default_days: 365
+
+tables:
+  orders: 2555            # keep order history ~7 years for tax/accounting
+  support_tickets: 365    # close-and-forget: 1 year after creation
+  users: 1095             # 3 years
+
+columns:
+  users.last_login_at: 730   # an account idle 2 years is a deletion candidate
+
+anchors:
+  users: created_at
+  orders: created_at
+  support_tickets: created_at
+
+exclude:
+  - "*.updated_at"         # "last modified" is not a retention trigger on its own
