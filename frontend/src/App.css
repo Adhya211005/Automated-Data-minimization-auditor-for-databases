@@ -99,6 +99,18 @@ td.why { color: var(--dim); font-size: 0.8rem; max-width: 340px; }
 .signal-hint { font-size: 0.76rem; color: var(--dim); }
 .signal-thresh-text { color: #9ca3af; }
 
+/* suggested fix */
+.fix { border: 1px solid var(--flag); border-radius: 8px; padding: 12px 14px; background: var(--flag-bg); }
+.fix-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.fix-head h4 { color: var(--flag); }
+.fix-strategy { font-size: 0.72rem; color: var(--flag); }
+.fix-summary { font-size: 0.85rem; margin: 6px 0; }
+.fix-cautions { margin: 6px 0; padding-left: 16px; font-size: 0.76rem; color: #7f1d1d; display: grid; gap: 3px; }
+.fix-sql-wrap { position: relative; margin-top: 8px; }
+.copy-btn { position: absolute; top: 6px; right: 6px; z-index: 1; font-size: 0.72rem; padding: 3px 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--panel); }
+.fix-sql { background: #1e293b; color: #e2e8f0; font-family: ui-monospace, monospace; font-size: 0.7rem; line-height: 1.45; padding: 10px 12px; border-radius: 6px; overflow-x: auto; white-space: pre; margin: 0; max-height: 340px; }
+.fix-note { font-size: 0.74rem; color: #7f1d1d; margin: 6px 0 0; }
+
 .mini-history { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
 .mini-history td { padding: 4px 6px; border-bottom: 1px solid var(--border); }
 .mini-history tr.current { background: #eff6ff; }

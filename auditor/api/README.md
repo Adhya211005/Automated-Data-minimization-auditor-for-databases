@@ -24,7 +24,8 @@ uvicorn auditor.api.main:app --reload        # http://127.0.0.1:8000/docs
 | `POST /audits` | **trigger a fresh audit run**, persist it, return the summary. Body (all optional): `window_days`, `mode`, `policy_days`, `policy_path`, `live_retention`, `note`, `metadata_path`, `log_path`. Omit `metadata_path` to audit the live target DB. |
 | `GET /audits` | list past runs, newest first (`?limit=`) |
 | `GET /audits/{run_id}` | **one run's ranked report** — flagged columns first, full `breakdown` + `reasons` per column. `run_id` accepts `"latest"`. `?flagged_only=true` trims to the flagged set. |
-| `GET /audits/{run_id}/columns/{qualified_name}` | **one column's full evidence** — the `breakdown`, `reasons`, and `evidence` (pii_type + matched rules, read counts + services + last access, days_overdue + policy) from Phase 5 |
+| `GET /audits/{run_id}/columns/{qualified_name}` | **one column's full evidence** — `breakdown`, `reasons`, `evidence`, and (for flagged/review columns) the `remediation` draft |
+| `GET /audits/{run_id}/columns/{qualified_name}/remediation` | just the draft SQL fix (`strategy`, `sql`, `cautions`, …); 404 for `keep` / `not_a_risk` |
 | `GET /audits/compare?base=&head=` | what changed between two runs — `newly_flagged`, `no_longer_flagged`, `verdict_changed`, `score_moved` |
 | `GET /columns/{qualified_name}/history` | one column across every run — "was this flagged last month too?" |
 | `GET /health` | liveness + run count |

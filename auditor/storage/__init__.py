@@ -9,6 +9,9 @@ from auditor.storage.db import get_session, init_db, reset_engine
 from auditor.storage.models import AuditRunRow, ColumnFindingRow
 from auditor.storage.repository import (
     RunNotFound,
+    column_finding,
+    column_history,
+    column_remediation,
     diff_runs,
     get_run,
     list_runs,
@@ -26,6 +29,9 @@ __all__ = [
     "get_run",
     "list_runs",
     "run_findings",
+    "column_finding",
+    "column_history",
+    "column_remediation",
     "diff_runs",
     "RunNotFound",
 ]

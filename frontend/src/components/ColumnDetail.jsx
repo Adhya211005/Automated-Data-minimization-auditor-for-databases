@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { verdict, num, when } from '../format'
 import SignalBar from './SignalBar'
+import SuggestedFix from './SuggestedFix'
 
 function Row({ k, v }) {
   if (v == null || v === '') return null
@@ -59,6 +60,10 @@ export default function ColumnDetail({ runId, qname, onClose }) {
               {col.reasons?.map((r, i) => <li key={i}>{r}</li>)}
             </ul>
           </section>
+
+          {col.remediation && col.remediation.strategy !== 'none' && (
+            <SuggestedFix remediation={col.remediation} />
+          )}
 
           <section className="signals">
             <h4>The three signals</h4>

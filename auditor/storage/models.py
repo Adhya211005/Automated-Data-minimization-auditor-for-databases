@@ -72,5 +72,6 @@ class ColumnFindingRow(Base):
     breakdown: Mapped[dict] = mapped_column(JSON, default=dict)
     reasons: Mapped[list] = mapped_column(JSON, default=list)
     evidence: Mapped[dict] = mapped_column(JSON, default=dict)
+    remediation: Mapped[dict | None] = mapped_column(JSON, nullable=True, default=None)
 
     run: Mapped["AuditRunRow"] = relationship(back_populates="findings")

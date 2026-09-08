@@ -26,7 +26,7 @@ sends permissive CORS for `localhost:5173/4173`.
 | view | backing endpoint | shows |
 |------|------------------|-------|
 | **Report** (default) | `GET /audits/{id}` | the selected run's ranked table — flagged first, verdict badge, per-column mini-bars for sensitive / (1−usage) / stale, and the top reason. "flagged only" toggle. Run picker in the header. |
-| **Column detail** (click a row) | `GET /audits/{id}/columns/{name}` | the necessity formula spelled out, the three `SignalBar`s with their thresholds, then the raw evidence: PII type + matched rules (chips), read/write counts + access-by-service + query templates, days overdue + policy + basis. Plus a mini history table (`GET /columns/{name}/history`). This is the "*why*, not just *that*" panel. |
+| **Column detail** (click a row) | `GET /audits/{id}/columns/{name}` | the necessity formula spelled out, the three `SignalBar`s with their thresholds, then the raw evidence: PII type + matched rules (chips), read/write counts + access-by-service + query templates, days overdue + policy + basis. For flagged/review columns, a **"Suggested fix"** block — the draft SQL migration with a **Copy SQL** button (draft only, the UI can't run it). Plus a mini history table (`GET /columns/{name}/history`). This is the "*why*, not just *that*" panel. |
 | **Compare runs** | `GET /audits/compare` | pick baseline → current; surfaces **newly flagged**, **no longer flagged**, **verdict changed** (with from→to badges), and score movement. Every column links back into the detail panel. |
 | **+ New audit** | `POST /audits` | policy days / window / attribution mode / note → runs the pipeline, persists, selects the new run. |
 
@@ -41,6 +41,7 @@ src/
     RunSummaryBar.jsx   flagged count, thresholds, verdict tallies
     ReportTable.jsx     the ranked column table
     ColumnDetail.jsx    the evidence panel  (the demo centrepiece)
+    SuggestedFix.jsx    the draft SQL + Copy button
     SignalBar.jsx       one 0-1 signal + threshold marker
     CompareView.jsx     run-to-run diff
     NewAuditForm.jsx    POST /audits modal

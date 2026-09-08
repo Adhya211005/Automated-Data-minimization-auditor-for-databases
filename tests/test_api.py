@@ -109,6 +109,44 @@ def test_not_found_cases(client, meta_file):
     assert client.get("/columns/users.nope/history").status_code == 404
 
 
+# --- remediation drafts ------------------------------------------- #
+
+def test_flagged_column_carries_a_remediation_draft(client, meta_file):
+    rid = client.post("/audits", json=_audit_body(meta_file)).json()["id"]
+
+    col = client.get(f"/audits/{rid}/columns/users.mothers_maiden_name").json()
+    assert col["has_remediation"] is True
+    rem = col["remediation"]
+    assert rem["strategy"] == "archive_then_drop"
+    assert rem["reversible"] is True
+    assert "DROP COLUMN" in rem["sql"] and "dma_archive" in rem["sql"]
+    assert "WHY FLAGGED" in rem["sql"]           # evidence embedded as comments
+    assert any("legal" in c.lower() or "retention" in c.lower() for c in rem["cautions"])
+
+    # dedicated endpoint
+    direct = client.get(f"/audits/{rid}/columns/users.mothers_maiden_name/remediation")
+    assert direct.status_code == 200
+    assert direct.json()["sql"] == rem["sql"]
+
+    # nothing was executed - the draft only mentions the archive schema, doesn't create it
+    assert "dma_archive" not in client.get(f"/audits/{rid}").json()["target"]
+
+
+def test_no_remediation_for_kept_columns(client, meta_file):
+    rid = client.post("/audits", json=_audit_body(meta_file)).json()["id"]
+    email = client.get(f"/audits/{rid}/columns/users.email").json()
+    assert email["has_remediation"] is False
+    assert email["remediation"] is None
+    assert client.get(f"/audits/{rid}/columns/users.email/remediation").status_code == 404
+
+
+def test_ssn_draft_flags_statutory_retention(client, meta_file):
+    rid = client.post("/audits", json=_audit_body(meta_file)).json()["id"]
+    rem = client.get(f"/audits/{rid}/columns/users.ssn/remediation").json()
+    assert any("statutory" in c for c in rem["cautions"])
+    assert 'DROP COLUMN "ssn"' in rem["sql"]
+
+
 # --- history + comparison (the DPO workflow) --------------------- #
 
 def test_column_history_across_runs(client, meta_file):

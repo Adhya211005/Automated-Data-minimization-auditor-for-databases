@@ -7,9 +7,12 @@ from typing import Optional
 
 from sqlalchemy import select
 
+from auditor.remediation.generator import RemediationGenerator
 from auditor.scoring.pipeline import AuditRun
 from auditor.storage.db import get_session
 from auditor.storage.models import AuditRunRow, ColumnFindingRow
+
+_REMEDIATION_VERDICTS = {"flag_for_deletion", "review"}
 
 
 class RunNotFound(LookupError):
@@ -20,6 +23,7 @@ def record_run(run: AuditRun, *, note: str = "") -> str:
     """Persist an AuditRun and its findings. Returns the new run id."""
     run_id = str(uuid.uuid4())
     res = run.result
+    remgen = RemediationGenerator()
     with get_session() as s:
         row = AuditRunRow(
             id=run_id,
@@ -37,6 +41,13 @@ def record_run(run: AuditRun, *, note: str = "") -> str:
             note=note,
         )
         for rank, ns in enumerate(res.columns, 1):
+            remediation = None
+            if ns.verdict in _REMEDIATION_VERDICTS:
+                remediation = remgen.generate(
+                    ns,
+                    run.metadata.column(ns.qualified_name),
+                    run.metadata.table(ns.table),
+                ).to_dict()
             row.findings.append(ColumnFindingRow(
                 rank=rank,
                 qualified_name=ns.qualified_name,
@@ -54,6 +65,7 @@ def record_run(run: AuditRun, *, note: str = "") -> str:
                 breakdown=ns.breakdown,
                 reasons=ns.reasons,
                 evidence=ns.evidence,
+                remediation=remediation,
             ))
         s.add(row)
     return run_id
@@ -224,10 +236,31 @@ def _finding_to_dict(f: ColumnFindingRow, *, full: bool = False) -> dict:
         "is_stale": f.is_stale,
         "breakdown": f.breakdown,
         "reasons": f.reasons,
+        "has_remediation": f.remediation is not None,
     }
     if full:
         d["evidence"] = f.evidence
+        d["remediation"] = f.remediation
     return d
+
+
+def column_remediation(run_id: str, qualified_name: str) -> dict:
+    with get_session() as s:
+        rid = _resolve_run_id(s, run_id)
+        f = s.execute(
+            select(ColumnFindingRow).where(
+                ColumnFindingRow.run_id == rid,
+                ColumnFindingRow.qualified_name == qualified_name,
+            )
+        ).scalar_one_or_none()
+        if f is None:
+            raise RunNotFound(f"{qualified_name} in run {rid}")
+        if f.remediation is None:
+            raise RunNotFound(
+                f"no remediation for {qualified_name} (verdict '{f.verdict}' - "
+                "drafts are generated for flag_for_deletion and review only)"
+            )
+        return f.remediation
 
 
 def _delta(qn: str, b: dict, h: dict) -> dict:

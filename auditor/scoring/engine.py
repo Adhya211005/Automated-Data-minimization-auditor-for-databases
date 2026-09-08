@@ -280,6 +280,7 @@ class ScoringEngine:
                 "read_count": usage.read_count,
                 "write_count": usage.write_count,
                 "last_access_at": usage.last_access_at,
+                "window_days": usage.window_days,
                 "access_by_service": usage.access_by_service,
                 "query_templates": usage.query_templates,
             }

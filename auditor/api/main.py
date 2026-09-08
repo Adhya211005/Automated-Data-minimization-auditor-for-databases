@@ -25,6 +25,7 @@ from auditor.api.schemas import (
     AuditRequest,
     ColumnEvidence,
     HistoryEntry,
+    Remediation,
     RunDiff,
     RunReport,
     RunSummary,
@@ -112,6 +113,16 @@ def get_audit(run_id: str, flagged_only: bool = Query(False)) -> dict:
 def get_column(run_id: str, qualified_name: str) -> dict:
     try:
         return repo.column_finding(run_id, qualified_name)
+    except repo.RunNotFound as exc:
+        raise HTTPException(404, str(exc))
+
+
+@app.get("/audits/{run_id}/columns/{qualified_name}/remediation", response_model=Remediation)
+def get_column_remediation(run_id: str, qualified_name: str) -> dict:
+    """The suggested SQL fix (draft, never executed). 404 for columns whose
+    verdict is 'keep' / 'not_a_risk' - no remediation is drafted for those."""
+    try:
+        return repo.column_remediation(run_id, qualified_name)
     except repo.RunNotFound as exc:
         raise HTTPException(404, str(exc))
 

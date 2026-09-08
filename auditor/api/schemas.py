@@ -35,6 +35,16 @@ class RunSummary(BaseModel):
     note: str = ""
 
 
+class Remediation(BaseModel):
+    qualified_name: str
+    strategy: str            # archive_then_drop | anonymize_in_place | none
+    summary: str
+    sql: str
+    cautions: list[str]
+    reversible: bool
+    dialect: str
+
+
 class Finding(BaseModel):
     rank: int
     qualified_name: str
@@ -51,10 +61,12 @@ class Finding(BaseModel):
     is_stale: bool
     breakdown: dict
     reasons: list[str]
+    has_remediation: bool = False
 
 
 class ColumnEvidence(Finding):
     evidence: dict
+    remediation: Optional[Remediation] = None
 
 
 class RunReport(RunSummary):

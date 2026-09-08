@@ -58,3 +58,16 @@ Compare view (newly_flagged / verdict_changed between runs), and
 POST /audits trigger. Verified rendering against the live stack via
 headless Chrome. Vite dev-proxies /api → :8000; API also sends CORS
 for localhost. 161 backend tests pass. Next: integration / demo prep.
+
+## Status
+Remediation generator done (auditor/remediation/). For each flagged
+(or 'review') column, drafts a SQL migration — archive-then-drop for
+plain columns, anonymize-in-place for keys — with the necessity
+evidence embedded as SQL comments and context-aware cautions
+(statutory retention for govt_id/financial, row-level-delete
+alternative when only some rows are overdue). DRAFT ONLY: never
+connects to a DB, never executes; the row-level DELETE stays
+commented out. Stored per-finding at audit time; served via
+GET /audits/{id}/columns/{name}/remediation. Dashboard shows it as a
+"Suggested fix" block with a Copy SQL button. 176 tests pass.
+Next: integration / demo prep.
