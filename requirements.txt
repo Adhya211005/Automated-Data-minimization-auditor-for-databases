@@ -1,7 +1,8 @@
 # Auditor runtime deps. (Phase 0 seeder has its own seed-data/requirements.txt.)
 SQLAlchemy>=2.0
 psycopg[binary]>=3.1        # PostgreSQL driver (postgresql+psycopg)
-# PyMySQL>=1.1              # uncomment when MySQL target support lands (Phase 1+)
+sqlglot>=25                 # SQL parsing for the usage analyzer (Phase 3)
+# PyMySQL>=1.1              # uncomment when MySQL target support lands
 
 # dev / test
 pytest>=8.0
