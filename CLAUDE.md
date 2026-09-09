@@ -85,3 +85,27 @@ column_catalog.csv; RF underperforms (R 0.857). HybridSensitivityClassifier
 (default mode 'blend', 0.6 regex + 0.4 ml, flags regex/ml disagreement)
 = P/R/F1 1.0 + tier-acc 0.826 > regex 0.804. Usage-as-feature: no
 effect, off by default. 193 tests pass. Next: integration / demo prep.
+
+## Status
+Retention policy NLP extractor done (auditor/retention/policy_extractor.py,
+seed-data/sample_retention_policy.md). Reads a written retention policy,
+pulls out (category -> N days) rules by regex + cue words (NOT an LLM -
+deterministic/testable; Groq seam documented), maps categories to
+tables/columns via a synonym lexicon + difflib fuzzy match, emits a
+RetentionPolicy in the EXACT Phase 4 shape - checker.py unchanged.
+Mapping is the weakest step (a policy sentence doesn't name a column):
+every proposal needs_confirmation, conflicts flagged, README is explicit
+it's an assistive draft not an autonomous decision. End-to-end test:
+extractor-built policy drives RetentionChecker byte-identically to a
+hand-written one with the same numbers. Closes the lit-survey gap
+(papers #2-4 do doc-NLP but never touch a live DB). 213 tests pass.
+Next: integration / demo prep.
+
+## Status
+Phases 0-7 + remediation stretch done. Added: ML sensitivity classifier
+(logreg default, RF rejected for recall regression, hybrid blend
+0.6*regex+0.4*ml improves tier_acc 0.804->0.826). Regex stays the
+pipeline default for auditability; ML trained on regex's own labels
+so it approximates rather than independently discovers. Next:
+retention policy extraction from documents (NLP/LLM), a stretch
+feature closing the literature-survey gap.

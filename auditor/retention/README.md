@@ -7,9 +7,10 @@ Deliberately the simplest of the three signals: a day-threshold policy vs the
 oldest timestamp in each table.
 
 ```
-policy.py    RetentionPolicy — default_days + per-table / per-column overrides
-checker.py   RetentionChecker -> ColumnRetention / TableRetention
-__main__.py  CLI
+policy.py            RetentionPolicy — default_days + per-table / per-column overrides
+checker.py           RetentionChecker -> ColumnRetention / TableRetention
+policy_extractor.py  draft a RetentionPolicy from a written policy document (below)
+__main__.py          CLI
 ```
 
 ## Use
@@ -121,3 +122,107 @@ its 1940 minimum). `users.mothers_maiden_name` → score 1.0, 535 days overdue
 resolution, the score curve, synthetic old/fresh tables (no DB), and the live
 seed (all tables overdue at 365 d, clear at 3650 d, DOB inherits, example
 policy discriminates).
+
+---
+
+# Policy extractor (`policy_extractor.py`)
+
+Closes the gap the literature survey names: papers #2–4 in the spec do NLP
+over legal/contract text but never connect it to a live database; Phase 4 is
+the live-database side. This reads a **written retention policy** and drafts
+the `RetentionPolicy` config Phase 4 otherwise expects hand-written — same
+shape, **the checker is unchanged**.
+
+```
+seed-data/sample_retention_policy.md   a realistic synthetic policy doc (reproducible, like Phase 0's data)
+policy_extractor.py                    extract rules -> map to schema -> PolicyDraft -> RetentionPolicy
+```
+
+## Use
+
+```powershell
+python -m auditor.retention.policy_extractor                    # review table for the sample doc
+python -m auditor.retention.policy_extractor --doc mypolicy.md
+python -m auditor.retention.policy_extractor --out draft.yaml   # review-ready YAML (every line commented)
+python -m auditor.retention.policy_extractor --check            # build policy, run it through the Phase 4 checker
+```
+
+```python
+from auditor.retention.policy_extractor import extract_policy
+draft = extract_policy("company_policy.md", metadata)
+for p in draft.proposals:            # each: category, days, target, match_score, evidence sentence
+    ...
+policy = draft.to_policy(accept={"orders", "support_tickets"})   # human picks which mappings to apply
+```
+
+## How it works — three steps, decreasing confidence
+
+1. **Duration + rule extraction** (`extract_rules`) — regex for `N years /
+   months / days` (digits and number-words), kept only when the sentence
+   carries a *retention* cue (`retained for`, `deleted after`, `no longer
+   than`, …) and not an *anti-cue* (`access request`, `breach`, `training`,
+   `backup … cycle`, `reviewed every …`). Wrapped lines are reflowed into
+   paragraphs first. Confidence 0.9 for `must be retained for`, 0.75 for
+   `kept for` / `deleted after`, −0.15 for conditional phrasing (`unless`).
+   This step is **reliable** — the numbers and periods come out cleanly.
+
+2. **Category → schema mapping** (`propose_mappings`) — for each rule, score
+   every table and a curated set of columns by keyword overlap against a
+   synonym lexicon (`order/transaction/invoice/payment → orders`,
+   `support/ticket/correspondence → support_tickets`, …) plus a `difflib`
+   fuzzy name match. This step is the **weakest evidence in the whole
+   pipeline** — a policy sentence ("financial records", "login history") does
+   not name a column, so the match is a guess. Every proposal carries
+   `needs_confirmation=True`; `suggested=True` only marks a high-score,
+   clear-margin guess as pre-ticked for the reviewer.
+
+3. **Assembly** (`PolicyDraft.to_policy`) — only proposals the human passed in
+   `accept=` (or the `suggested` ones, with a warning) become policy entries.
+   Where two rules map to one target with different periods
+   (`PolicyDraft.conflicts`), the **longer** period is kept and the conflict
+   is reported.
+
+## Extraction: rule-based, not an LLM
+
+Pure regex + cue-word rules + a synonym lexicon. **No LLM.** Why: it's
+deterministic, testable with no API key, and the reliable part (the numeric
+periods) doesn't need one. An LLM (Groq is in the stack) would help most with
+category-phrase extraction from tangled sentences and with semantic table
+mapping — `extract_rules_llm()` is a documented, unimplemented seam for that.
+
+## Accuracy limitations — read before trusting a draft
+
+**This is an assistive draft a human reviews, not an autonomous decision.**
+
+- **The mapping step is inherently ambiguous.** "Customer support tickets …
+  1 year" → `support_tickets` is easy. "Login history … 90 days" could be
+  `users.last_login_at`, `users.last_login_ip`, or both — the extractor
+  reports the tie and picks neither automatically. "Financial records" maps
+  to `orders` here only because our lexicon says so; on a different schema it
+  might be a `payments` or `invoices` table the lexicon doesn't know.
+- **Category extraction is shallow.** It takes the noun phrase before the
+  retention verb. Complex sentences ("X, except where Y, in which case Z")
+  are truncated or mis-attributed.
+- **One period per sentence.** "2 years unless renewed, then 3 years" keeps
+  the first number only.
+- **Silent misses.** A retention rule phrased without a recognised cue word,
+  or with a written-out period the number-word map doesn't cover, is dropped
+  with no error. Always diff the extracted rule count against the document.
+- **The synonym lexicon is hand-built** for this schema's domain. A new
+  target database needs its lexicon extended, or matches fall to fuzzy string
+  similarity only.
+
+On the sample doc the extractor gets all 9 periods and the default right, maps
+the three tables cleanly, and correctly flags the two genuine ambiguities
+(marketing-consent period conflict, survey-responses column vs table). That is
+the *best* case — a policy written to be parseable, against a schema the
+lexicon knows.
+
+## Tests
+
+`tests/test_policy_extractor.py` — duration parsing, the 9 expected periods
+from the sample doc, the §3 non-retention noise correctly ignored, wrapped-line
+handling, conflict detection, and the **end-to-end equivalence test**: a
+policy built by the extractor drives `RetentionChecker` byte-identically
+(every column's score / overdue / days-overdue / basis) to a hand-written
+policy with the same numbers.
