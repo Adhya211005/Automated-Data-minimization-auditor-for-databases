@@ -109,3 +109,25 @@ pipeline default for auditability; ML trained on regex's own labels
 so it approximates rather than independently discovers. Next:
 retention policy extraction from documents (NLP/LLM), a stretch
 feature closing the literature-survey gap.
+## Status
+All build phases done (0-7 + remediation stretch + ML sensitivity
+classifier + retention policy extraction). Regex sensitivity stays
+pipeline default; ML/hybrid available, honestly evaluated (matches
+baseline P/R, hybrid improves tier_acc 0.804->0.826). Retention policy
+extraction is rule-based (no LLM), correctly ignores non-retention
+noise, flags genuine ambiguities instead of guessing, byte-identical
+to hand-written config. Next: Phase 8 — clean-slate integration run,
+root README, DEMO.md. No new features from here.
+
+## Status
+DONE. Integration + demo prep complete. Root README.md (clean-clone
+setup in exact order) and docs/DEMO.md (5-min walkthrough) written.
+Clean-slate run verified: reseed (11s), read-only check, --evaluate
+PASS, backend cold start, full dashboard click-through (report ->
+detail -> remediation + copy -> compare) with ZERO page errors.
+213 tests pass. Fresh audit trigger -> ranked result: ~1s pipeline,
+~1s API round-trip, ~2s to dashboard. NOTHING broke on cold start.
+Only caveat: project lives in a OneDrive-synced folder; right after
+seed regenerates the 15MB query log, sync churn spikes audits to
+5-15s for ~1min -> pause OneDrive before demoing (documented in
+README + DEMO.md). Steady state ~1s.
