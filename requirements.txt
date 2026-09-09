@@ -5,6 +5,7 @@ sqlglot>=25                 # SQL parsing for the usage analyzer (Phase 3)
 PyYAML>=6.0                 # retention policy files (Phase 4)
 fastapi>=0.110              # API backend (Phase 6)
 uvicorn[standard]>=0.27     # ASGI server for `uvicorn auditor.api.main:app`
+scikit-learn>=1.4           # ML sensitivity classifier (numpy/scipy/joblib come with it)
 # PyMySQL>=1.1              # uncomment when MySQL target support lands
 
 # dev / test

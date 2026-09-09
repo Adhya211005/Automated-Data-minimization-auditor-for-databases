@@ -1,9 +1,11 @@
 """CLI for the sensitivity classifier.
 
-    python -m auditor.sensitivity                     classify the live target DB, print a table
+    python -m auditor.sensitivity                     classify the live target DB (regex baseline)
     python -m auditor.sensitivity --metadata m.json   classify from a saved metadata dump (no DB)
+    python -m auditor.sensitivity --mode ml|hybrid    use the ML model / the regex+ML blend
     python -m auditor.sensitivity --json              emit ColumnSensitivity records as JSON
-    python -m auditor.sensitivity --evaluate          score against seed-data/output/column_catalog.csv
+    python -m auditor.sensitivity --evaluate          score the chosen mode vs column_catalog.csv
+    python -m auditor.sensitivity --compare           regex vs ML vs hybrid, side by side
 """
 
 from __future__ import annotations
@@ -33,14 +35,30 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="auditor.sensitivity", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--metadata", metavar="FILE", help="metadata JSON from `python -m auditor.ingestion --out`")
+    ap.add_argument("--mode", choices=["regex", "ml", "hybrid"], default="regex")
     ap.add_argument("--json", action="store_true", help="print ColumnSensitivity records as JSON")
     ap.add_argument("--evaluate", action="store_true", help="score against the ground-truth catalogue")
+    ap.add_argument("--compare", action="store_true", help="regex vs ML vs hybrid, side by side")
     ap.add_argument("--ground-truth", default=str(DEFAULT_GROUND_TRUTH))
     ap.add_argument("--threshold", type=float, default=0.5)
     args = ap.parse_args(argv)
 
     meta = _load_metadata(args.metadata)
-    clf = RegexSensitivityClassifier(threshold=args.threshold)
+
+    if args.compare:
+        from auditor.sensitivity.evaluation_ml import compare
+        from auditor.sensitivity.ml_classifier import load_model
+        print(compare(meta, model=load_model()).format())
+        return 0
+
+    if args.mode == "regex":
+        clf = RegexSensitivityClassifier(threshold=args.threshold)
+    elif args.mode == "ml":
+        from auditor.sensitivity.ml_classifier import MLSensitivityClassifier
+        clf = MLSensitivityClassifier(threshold=args.threshold)
+    else:
+        from auditor.sensitivity.ml_classifier import HybridSensitivityClassifier
+        clf = HybridSensitivityClassifier(threshold=args.threshold)
     preds = clf.classify_all(meta.iter_columns())
 
     if args.evaluate:

@@ -12,6 +12,9 @@ seed-data/output/
 auditor/audit_history.db
 *.db
 
+# trained ML model (deterministic - auto-trains on first use)
+auditor/sensitivity/models/
+
 # python
 __pycache__/
 *.pyc

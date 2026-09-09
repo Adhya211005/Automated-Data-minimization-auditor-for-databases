@@ -71,3 +71,17 @@ commented out. Stored per-finding at audit time; served via
 GET /audits/{id}/columns/{name}/remediation. Dashboard shows it as a
 "Suggested fix" block with a Copy SQL button. 176 tests pass.
 Next: integration / demo prep.
+
+## Status
+ML sensitivity classifier done (auditor/sensitivity/ml_classifier.py,
+features.py, synth.py, evaluation_ml.py). scikit-learn logreg (default;
+RF option) predicting the 4 tiers + a pii_type model, trained on ~900
+synthetic columns labelled by the regex classifier. HONEST LIMITATION
+(in README): labels come from the rules, so the model approximates the
+rules rather than learning independent ground truth. Regex baseline
+UNCHANGED and still the pipeline default. Results: logreg = 1.0 on
+held-out synthetic, matches regex P/R/F1=1.0 on the seed vs
+column_catalog.csv; RF underperforms (R 0.857). HybridSensitivityClassifier
+(default mode 'blend', 0.6 regex + 0.4 ml, flags regex/ml disagreement)
+= P/R/F1 1.0 + tier-acc 0.826 > regex 0.804. Usage-as-feature: no
+effect, off by default. 193 tests pass. Next: integration / demo prep.
